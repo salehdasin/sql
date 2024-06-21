@@ -1,0 +1,91 @@
+
+
+
+import pandas as pd
+
+from sqlalchemy import create_engine, inspect
+
+import os
+
+
+
+# تنظیمات اتصال به SQL Server با استفاده از Windows Authentication
+
+server = 'نام_سرور' # نام سرور محلی یا راه دور خود را وارد کنید
+
+database = 'نام_دیتابیس' # نام دیتابیس مورد نظر خود را وارد کنید
+
+driver = 'ODBC Driver 17 for SQL Server'
+
+
+
+# ایجاد یک رشته اتصال (Connection String) با استفاده از Windows Authentication
+
+connection_string = f'mssql+pyodbc://@{server}/{database}?driver={driver}&trusted_connection=yes'
+
+engine = create_engine(connection_string)
+
+
+
+# ایجاد یک inspector برای دریافت اطلاعات دیتابیس
+
+inspector = inspect(engine)
+
+
+
+# دریافت لیست جداول و ویوها به همراه اسکیمای آن‌ها
+
+schemas = inspector.get_schema_names()
+
+table_data = []
+
+
+
+for schema in schemas:
+
+  schema_tables = inspector.get_table_names(schema=schema)
+
+  for table in schema_tables:
+
+    columns = inspector.get_columns(table, schema=schema)
+
+    table_data.append({'Schema': schema, 'Name': table, 'Type': 'Table', 'Columns': [column['name'] for column in columns]})
+
+
+
+  schema_views = inspector.get_view_names(schema=schema)
+
+  for view in schema_views:
+
+    columns = inspector.get_columns(view, schema=schema)
+
+    table_data.append({'Schema': schema, 'Name': view, 'Type': 'View', 'Columns': [column['name'] for column in columns]})
+
+
+
+# تبدیل داده‌ها به یک DataFrame
+
+df = pd.DataFrame(table_data)
+
+
+
+# تعیین نام فایل و مسیر آن
+
+file_name = 'schema_tables_views.xlsx'
+
+file_path = os.path.abspath(file_name)
+
+
+
+# ذخیره DataFrame در یک فایل اکسل
+
+df.to_excel(file_path, index=False)
+
+
+
+# چاپ مسیر فایل
+
+print(f"نام اسکیمای جداول و ویوها به همراه اطلاعات ستون‌ها با موفقیت استخراج و در فایل اکسل ذخیره شدند. مسیر فایل: {file_path}")
+
+
+
